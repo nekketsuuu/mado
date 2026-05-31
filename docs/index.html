@@ -665,6 +665,34 @@
     setInterval(pollMuteState, 400);
   }
 
+  // PC/Android: keep our custom slider in sync with the player's own controls.
+  // The volume button inside the iframe can mute/unmute and (on PC) change the
+  // volume, but the IFrame API exposes no change event, so poll getVolume()/
+  // isMuted() and mirror the effective level (0 while muted) onto the slider.
+  function syncVolumeUI() {
+    windows.forEach(function (w) {
+      if (!w.player || typeof w.player.getVolume !== "function") return;
+      var vol, muted;
+      try {
+        vol = w.player.getVolume();
+        muted = (typeof w.player.isMuted === "function") && w.player.isMuted();
+      } catch (e) { return; }
+      if (typeof vol !== "number" || isNaN(vol)) return;
+      var effective = muted ? 0 : Math.round(vol);
+      w.volume = effective;
+      var cell = document.getElementById("cell-" + w.id);
+      if (!cell) return;
+      var range = cell.querySelector(".vol-range");
+      // Leave it alone while the user is dragging our own slider.
+      if (range && document.activeElement !== range && Number(range.value) !== effective) {
+        range.value = String(effective);
+      }
+    });
+  }
+  if (!IOS) {
+    setInterval(syncVolumeUI, 400);
+  }
+
   loadState();
 })();
 </script>
