@@ -216,6 +216,18 @@
   var apiReady = false;
   var pending = [];
 
+  // iOS/iPadOS have exclusive audio focus, meaning only one video can play sound at a time.
+  // On Android and other platforms, sound can play in all windows as usual.
+  function detectIOS() {
+    var ua = navigator.userAgent || "";
+    if (/iPhone|iPad|iPod/.test(ua)) return true;
+    // Since iPadOS 13+ spoofs its User Agent as a Mac, touch-enabled Macs are also treated as iPads.
+    if (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1) return true;
+    return false;
+  }
+  var IOS = detectIOS();
+  var soloId = null;
+
   var gridEl = document.getElementById("grid");
   var emptyEl = document.getElementById("empty");
   var urlEl = document.getElementById("url");
@@ -266,18 +278,38 @@
     }, 1200);
   }
 
+  function soloAudio(id) {
+    soloId = id;
+    windows.forEach(function (w) {
+      if (!w.player || typeof w.player.mute !== "function") return;
+      if (w.id !== id) {
+        try { w.player.mute(); } catch (e) {}
+        w.lastMuted = true;
+      }
+    });
+    var t = windows.find(function (w) { return w.id === id; });
+    if (t && t.player && typeof t.player.unMute === "function") {
+      try { t.player.unMute(); } catch (e) {}
+      t.lastMuted = false;
+    }
+  }
+
   var YT_PLAYING = 1; // YT.PlayerState.PLAYING
   function createPlayer(win) {
     win.player = new YT.Player(win.mountId, {
       videoId: win.videoId,
       playerVars: {
         playsinline: 1,
-        rel: 0
+        rel: 0,
+        mute: IOS ? 1 : 0
       },
       events: {
         onReady: function () { showTools(win); },
         onStateChange: function (e) {
           win.playing = (e.data === YT_PLAYING);
+          if (IOS && e.data === YT_PLAYING) {
+            soloAudio(win.id);
+          }
           showTools(win);
         }
       }
@@ -508,6 +540,25 @@
     pending.forEach(createPlayer);
     pending = [];
   };
+
+  // iOS: Detect when unmuted via the volume button within an iframe
+  // Since the YT IFrame API lacks a volume change event, monitor it via polling.
+  function pollMuteState() {
+    windows.forEach(function (w) {
+      if (!w.player || typeof w.player.isMuted !== "function") return;
+      var m;
+      try { m = w.player.isMuted(); } catch (e) { return; }
+      if (w.lastMuted === undefined) { w.lastMuted = m; return; }
+      if (w.lastMuted && !m && soloId !== w.id) {
+        soloAudio(w.id);
+        return;
+      }
+      w.lastMuted = m;
+    });
+  }
+  if (IOS) {
+    setInterval(pollMuteState, 400);
+  }
 
   loadState();
 })();
