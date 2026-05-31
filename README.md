@@ -12,7 +12,7 @@ Play multiple YouTube videos simultaneously on mobile, a feature often called è¤
     
     > A page or screen must not have more than one YouTube player that automatically plays content simultaneously.
 - Because this application uses embedded YouTube videos, paid features such as YouTube Premium and channel memberships cannot be used.
-- On iOS/iPadOS devices, only one video can output audio at a time.
+- On iOS/iPadOS devices, only one video can output audio at a time, and per-video volumes can't be configured.
 
 ## License
 

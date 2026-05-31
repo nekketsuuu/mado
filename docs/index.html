@@ -125,11 +125,17 @@
     left: 50%;
     transform: translateX(-50%);
     display: flex;
+    flex-direction: column;
+    align-items: center;
     gap: 6px;
     z-index: 5;
     opacity: 0;
     pointer-events: none;
     transition: opacity .25s ease;
+  }
+  .cell .tool-row {
+    display: flex;
+    gap: 6px;
   }
   .cell .tools.show {
     opacity: 1;
@@ -160,6 +166,53 @@
   .tool:active { background: rgba(0,0,0,0.85); }
   .tool.del { background: rgba(180,0,0,0.7); }
   .tool:disabled { opacity: 0.3; cursor: default; }
+
+  .cell .vol {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px 8px;
+    border-radius: 6px;
+    background: rgba(0,0,0,0.6);
+    -webkit-backdrop-filter: blur(2px);
+    backdrop-filter: blur(2px);
+  }
+  .cell .vol-range {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 96px;
+    height: 16px;
+    margin: 0;
+    background: transparent;
+    cursor: pointer;
+  }
+  .cell .vol-range::-webkit-slider-runnable-track {
+    height: 4px;
+    border-radius: 3px;
+    background: rgba(255,255,255,0.4);
+  }
+  .cell .vol-range::-moz-range-track {
+    height: 4px;
+    border-radius: 3px;
+    background: rgba(255,255,255,0.4);
+  }
+  .cell .vol-range::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    margin-top: -6px;
+    width: 16px;
+    height: 16px;
+    border: none;
+    border-radius: 50%;
+    background: #fff;
+  }
+  .cell .vol-range::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    border: none;
+    border-radius: 50%;
+    background: #fff;
+  }
 </style>
 </head>
 <body>
@@ -304,7 +357,12 @@
         mute: IOS ? 1 : 0
       },
       events: {
-        onReady: function () { showTools(win); },
+        onReady: function () {
+          if (win.volume != null && typeof win.player.setVolume === "function") {
+            try { win.player.setVolume(win.volume); } catch (e) {}
+          }
+          showTools(win);
+        },
         onStateChange: function (e) {
           win.playing = (e.data === YT_PLAYING);
           if (IOS && e.data === YT_PLAYING) {
@@ -435,9 +493,19 @@
 
     var tools = document.createElement("div");
     tools.className = "tools";
-    tools.appendChild(toolBtn("left", "←", function () { move(win.id, -1); showTools(win); }));
-    tools.appendChild(toolBtn("right", "→", function () { move(win.id, 1); showTools(win); }));
-    tools.appendChild(toolBtn("del", "×", function () { removeWindow(win.id); }));
+
+    var row = document.createElement("div");
+    row.className = "tool-row";
+    row.appendChild(toolBtn("left", "←", function () { move(win.id, -1); showTools(win); }));
+    row.appendChild(toolBtn("right", "→", function () { move(win.id, 1); showTools(win); }));
+    row.appendChild(toolBtn("del", "×", function () { removeWindow(win.id); }));
+    tools.appendChild(row);
+
+    // iOS/iPadOS treat media volume as read-only, so setVolume() has no effect there. 
+    // Only show the slider on platforms where it actually works.
+    if (!IOS) {
+      tools.appendChild(buildVolume(win));
+    }
     cell.appendChild(tools);
 
     return cell;
@@ -453,6 +521,43 @@
       onClick();
     });
     return b;
+  }
+
+  function buildVolume(win) {
+    var wrap = document.createElement("div");
+    wrap.className = "vol";
+    var range = document.createElement("input");
+    range.type = "range";
+    range.className = "vol-range";
+    range.min = "0";
+    range.max = "100";
+    range.value = String(win.volume == null ? 100 : win.volume);
+    range.setAttribute("aria-label", "Volume");
+    range.addEventListener("click", function (e) { e.stopPropagation(); });
+    range.addEventListener("input", function (e) {
+      e.stopPropagation();
+      setVolume(win.id, Number(range.value));
+      showTools(win);
+    });
+    wrap.appendChild(range);
+    return wrap;
+  }
+
+  function setVolume(id, v) {
+    var w = windows.find(function (ww) { return ww.id === id; });
+    if (!w) return;
+    w.volume = v;
+    if (!w.player || typeof w.player.setVolume !== "function") return;
+    try { w.player.setVolume(v); } catch (e) {}
+    if (v === 0) {
+      try { w.player.mute(); } catch (e) {}
+      w.lastMuted = true;
+    } else if (!IOS || soloId === null || soloId === id) {
+      // Don't fight the iOS exclusive-audio solo logic for background windows.
+      try { w.player.unMute(); } catch (e) {}
+      w.lastMuted = false;
+      if (IOS) soloAudio(id);
+    }
   }
 
   document.getElementById("add").addEventListener("click", onAdd);
