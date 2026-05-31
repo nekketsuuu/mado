@@ -264,55 +264,55 @@
   "use strict";
 
   // windows: [{ id:number, videoId:string, player:YT.Player|null, mountId:string }]
-  var windows = [];
-  var cols = 1;
-  var nextId = 1;
-  var apiReady = false;
-  var pending = [];
+  const windows = [];
+  let cols = 1;
+  let nextId = 1;
+  let apiReady = false;
+  let pending = [];
 
   // iOS/iPadOS have exclusive audio focus, meaning only one video can play sound at a time.
   // On Android and other platforms, sound can play in all windows as usual.
   function detectIOS() {
-    var ua = navigator.userAgent || "";
+    const ua = navigator.userAgent || "";
     if (/iPhone|iPad|iPod/.test(ua)) return true;
     // Since iPadOS 13+ spoofs its User Agent as a Mac, touch-enabled Macs are also treated as iPads.
     if (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1) return true;
     return false;
   }
-  var IOS = detectIOS();
-  var soloId = null;
+  const IOS = detectIOS();
+  let soloId = null;
 
-  var gridEl = document.getElementById("grid");
-  var emptyEl = document.getElementById("empty");
-  var urlEl = document.getElementById("url");
+  const gridEl = document.getElementById("grid");
+  const emptyEl = document.getElementById("empty");
+  const urlEl = document.getElementById("url");
 
   function isId(x) { return !!x && /^[A-Za-z0-9_-]{11}$/.test(x); }
 
   // Support watch?v=, youtu.be/, /live/, /embed/, /shorts/, /v/, and a raw 11-digit ID
   function parseVideoId(input) {
     if (!input) return null;
-    var s = input.trim();
+    const s = input.trim();
 
     if (isId(s)) return s;
 
-    var url;
+    let url;
     try {
       url = new URL(s);
     } catch (e) {
       return null;
     }
 
-    var host = url.hostname.replace(/^www\./, "");
+    const host = url.hostname.replace(/^www\./, "");
 
     if (host === "youtu.be") {
-      var seg = url.pathname.split("/").filter(Boolean)[0];
+      const seg = url.pathname.split("/").filter(Boolean)[0];
       return isId(seg) ? seg : null;
     }
 
     if (host === "youtube.com" || host === "m.youtube.com" || host === "music.youtube.com") {
-      var v = url.searchParams.get("v");
+      const v = url.searchParams.get("v");
       if (isId(v)) return v;
-      var parts = url.pathname.split("/").filter(Boolean);
+      const parts = url.pathname.split("/").filter(Boolean);
       if (parts.length >= 2 &&
           (parts[0] === "live" || parts[0] === "embed" || parts[0] === "shorts" || parts[0] === "v")) {
         return isId(parts[1]) ? parts[1] : null;
@@ -321,7 +321,7 @@
     return null;
   }
 
-  var invalidTimer = null;
+  let invalidTimer = null;
   function flashInvalid() {
     urlEl.classList.remove("invalid");
     void urlEl.offsetWidth;
@@ -341,14 +341,14 @@
         w.lastMuted = true;
       }
     });
-    var t = windows.find(function (w) { return w.id === id; });
+    const t = windows.find(function (w) { return w.id === id; });
     if (t && t.player && typeof t.player.unMute === "function") {
       try { t.player.unMute(); } catch (e) {}
       t.lastMuted = false;
     }
   }
 
-  var YT_PLAYING = 1; // YT.PlayerState.PLAYING
+  const YT_PLAYING = 1; // YT.PlayerState.PLAYING
   function createPlayer(win) {
     win.player = new YT.Player(win.mountId, {
       videoId: win.videoId,
@@ -376,8 +376,8 @@
   }
 
   function addWindow(videoId) {
-    var id = nextId++;
-    var win = {
+    const id = nextId++;
+    const win = {
       id: id,
       videoId: videoId,
       player: null,
@@ -396,9 +396,9 @@
   }
 
   function removeWindow(id) {
-    var idx = windows.findIndex(function (w) { return w.id === id; });
+    const idx = windows.findIndex(function (w) { return w.id === id; });
     if (idx === -1) return;
-    var win = windows[idx];
+    const win = windows[idx];
     if (win.player && typeof win.player.destroy === "function") {
       win.player.destroy();
     }
@@ -408,11 +408,11 @@
   }
 
   function move(id, dir) {
-    var idx = windows.findIndex(function (w) { return w.id === id; });
+    const idx = windows.findIndex(function (w) { return w.id === id; });
     if (idx === -1) return;
-    var to = idx + dir;
+    const to = idx + dir;
     if (to < 0 || to >= windows.length) return;
-    var tmp = windows[idx];
+    const tmp = windows[idx];
     windows[idx] = windows[to];
     windows[to] = tmp;
     render();
@@ -423,8 +423,8 @@
     cols = n;
     gridEl.classList.remove("cols-1", "cols-2", "cols-3");
     gridEl.classList.add("cols-" + n);
-    var segs = document.querySelectorAll(".seg");
-    for (var i = 0; i < segs.length; i++) {
+    const segs = document.querySelectorAll(".seg");
+    for (let i = 0; i < segs.length; i++) {
       segs[i].classList.toggle("active", Number(segs[i].dataset.cols) === n);
     }
     render();
@@ -436,14 +436,14 @@
 
     // In order not to recreate iframe, preserve DOM of existing cells and just update CSS `order`.
     windows.forEach(function (win, i) {
-      var cell = document.getElementById("cell-" + win.id);
+      let cell = document.getElementById("cell-" + win.id);
       if (!cell) {
         cell = buildCell(win);
         gridEl.appendChild(cell);
       }
       cell.style.order = String(i);
-      var left = cell.querySelector(".tool.left");
-      var right = cell.querySelector(".tool.right");
+      const left = cell.querySelector(".tool.left");
+      const right = cell.querySelector(".tool.right");
       if (left) {
         left.disabled = (i === 0);
         left.textContent = (cols === 1) ? "↑" : "←";
@@ -454,19 +454,19 @@
       }
     });
 
-    var cells = gridEl.querySelectorAll(".cell");
-    for (var j = 0; j < cells.length; j++) {
-      var cid = Number(cells[j].id.replace("cell-", ""));
-      var stillExists = windows.some(function (w) { return w.id === cid; });
+    const cells = gridEl.querySelectorAll(".cell");
+    for (let j = 0; j < cells.length; j++) {
+      const cid = Number(cells[j].id.replace("cell-", ""));
+      const stillExists = windows.some(function (w) { return w.id === cid; });
       if (!stillExists) cells[j].remove();
     }
   }
 
-  var HIDE_DELAY = 3000;
+  const HIDE_DELAY = 3000;
   function showTools(win) {
-    var cell = document.getElementById("cell-" + win.id);
+    const cell = document.getElementById("cell-" + win.id);
     if (!cell) return;
-    var tools = cell.querySelector(".tools");
+    const tools = cell.querySelector(".tools");
     if (!tools) return;
     tools.classList.add("show");
     if (win.hideTimer) { clearTimeout(win.hideTimer); win.hideTimer = null; }
@@ -476,26 +476,26 @@
   }
   function hideTools(win) {
     win.hideTimer = null;
-    var cell = document.getElementById("cell-" + win.id);
+    const cell = document.getElementById("cell-" + win.id);
     if (!cell) return;
-    var tools = cell.querySelector(".tools");
+    const tools = cell.querySelector(".tools");
     if (tools) tools.classList.remove("show");
   }
 
   function buildCell(win) {
-    var cell = document.createElement("div");
+    const cell = document.createElement("div");
     cell.className = "cell";
     cell.id = "cell-" + win.id;
 
-    var mount = document.createElement("div");
+    const mount = document.createElement("div");
     mount.className = "player";
     mount.id = win.mountId;
     cell.appendChild(mount);
 
-    var tools = document.createElement("div");
+    const tools = document.createElement("div");
     tools.className = "tools";
 
-    var row = document.createElement("div");
+    const row = document.createElement("div");
     row.className = "tool-row";
     row.appendChild(toolBtn("left", "←", function () { move(win.id, -1); showTools(win); }));
     row.appendChild(toolBtn("right", "→", function () { move(win.id, 1); showTools(win); }));
@@ -513,7 +513,7 @@
   }
 
   function toolBtn(cls, label, onClick) {
-    var b = document.createElement("button");
+    const b = document.createElement("button");
     b.className = "tool " + cls;
     b.type = "button";
     b.textContent = label;
@@ -525,9 +525,9 @@
   }
 
   function buildVolume(win) {
-    var wrap = document.createElement("div");
+    const wrap = document.createElement("div");
     wrap.className = "vol";
-    var range = document.createElement("input");
+    const range = document.createElement("input");
     range.type = "range";
     range.className = "vol-range";
     range.min = "0";
@@ -545,7 +545,7 @@
   }
 
   function setVolume(id, v) {
-    var w = windows.find(function (ww) { return ww.id === id; });
+    const w = windows.find(function (ww) { return ww.id === id; });
     if (!w) return;
     w.volume = v;
     if (!w.player || typeof w.player.setVolume !== "function") return;
@@ -566,7 +566,7 @@
     if (e.key === "Enter") onAdd();
   });
   function onAdd() {
-    var vid = parseVideoId(urlEl.value);
+    const vid = parseVideoId(urlEl.value);
     if (!vid) {
       flashInvalid();
       return;
@@ -579,8 +579,8 @@
     urlEl.classList.remove("invalid");
   });
 
-  var segBtns = document.querySelectorAll(".seg");
-  for (var k = 0; k < segBtns.length; k++) {
+  const segBtns = document.querySelectorAll(".seg");
+  for (let k = 0; k < segBtns.length; k++) {
     segBtns[k].addEventListener("click", function () {
       setCols(Number(this.dataset.cols));
     });
@@ -589,9 +589,9 @@
   if (window.addEventListener) {
     window.addEventListener("blur", function () {
       setTimeout(function () {
-        var ae = document.activeElement;
+        const ae = document.activeElement;
         if (ae && ae.tagName === "IFRAME") {
-          var win = windows.find(function (w) { return w.mountId === ae.id; });
+          const win = windows.find(function (w) { return w.mountId === ae.id; });
           if (win) showTools(win);
           try { window.focus(); } catch (e) {}
         }
@@ -599,37 +599,37 @@
     });
   }
 
-  var MAX_WINDOWS = 12;
-  var restoring = false;
+  const MAX_WINDOWS = 12;
+  let restoring = false;
 
   // Save the current state as URL params so that users can reload the page without losing the added videos.
   // Format: ?cols=<n>&v=<id>,<id>,...
   function saveState() {
     if (restoring) return;
     if (typeof history === "undefined" || !history.replaceState) return;
-    var params = new URLSearchParams();
+    const params = new URLSearchParams();
     params.set("cols", String(cols));
     if (windows.length) {
       params.set("v", windows.map(function (w) { return w.videoId; }).join(","));
     }
-    var qs = params.toString();
+    const qs = params.toString();
     history.replaceState(null, "", qs ? ("?" + qs) : location.pathname);
   }
 
   function loadState() {
     if (typeof URLSearchParams === "undefined") return;
-    var params = new URLSearchParams(location.search);
+    const params = new URLSearchParams(location.search);
 
     restoring = true;
 
-    var c = parseInt(params.get("cols"), 10);
+    const c = parseInt(params.get("cols"), 10);
     setCols(c === 2 || c === 3 ? c : 1);
 
-    var raw = params.get("v");
+    const raw = params.get("v");
     if (raw) {
-      var ids = raw.split(",");
-      var added = 0;
-      for (var i = 0; i < ids.length && added < MAX_WINDOWS; i++) {
+      const ids = raw.split(",");
+      let added = 0;
+      for (let i = 0; i < ids.length && added < MAX_WINDOWS; i++) {
         if (isId(ids[i])) {
           addWindow(ids[i]);
           added++;
@@ -652,7 +652,7 @@
   function pollMuteState() {
     windows.forEach(function (w) {
       if (!w.player || typeof w.player.isMuted !== "function") return;
-      var m;
+      let m;
       try { m = w.player.isMuted(); } catch (e) { return; }
       if (w.lastMuted === undefined) { w.lastMuted = m; return; }
       if (w.lastMuted && !m && soloId !== w.id) {
@@ -673,17 +673,17 @@
   function syncVolumeUI() {
     windows.forEach(function (w) {
       if (!w.player || typeof w.player.getVolume !== "function") return;
-      var vol, muted;
+      let vol, muted;
       try {
         vol = w.player.getVolume();
         muted = (typeof w.player.isMuted === "function") && w.player.isMuted();
       } catch (e) { return; }
       if (typeof vol !== "number" || isNaN(vol)) return;
-      var effective = muted ? 0 : Math.round(vol);
+      const effective = muted ? 0 : Math.round(vol);
       w.volume = effective;
-      var cell = document.getElementById("cell-" + w.id);
+      const cell = document.getElementById("cell-" + w.id);
       if (!cell) return;
-      var range = cell.querySelector(".vol-range");
+      const range = cell.querySelector(".vol-range");
       // Leave it alone while the user is dragging our own slider.
       if (range && document.activeElement !== range && Number(range.value) !== effective) {
         range.value = String(effective);
