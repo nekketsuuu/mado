@@ -94,6 +94,7 @@
   }
   #grid.cols-1 { grid-template-columns: 1fr; }
   #grid.cols-2 { grid-template-columns: 1fr 1fr; }
+  #grid.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
 
   #empty {
     grid-column: 1 / -1;
@@ -179,6 +180,16 @@
           <rect x="11" y="3" width="6" height="6" rx="1"></rect>
           <rect x="3" y="11" width="6" height="6" rx="1"></rect>
           <rect x="11" y="11" width="6" height="6" rx="1"></rect>
+        </svg>
+      </button>
+      <button class="btn seg icon" data-cols="3" aria-label="3 columns">
+        <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+          <rect x="2" y="3" width="4" height="6" rx="1"></rect>
+          <rect x="8" y="3" width="4" height="6" rx="1"></rect>
+          <rect x="14" y="3" width="4" height="6" rx="1"></rect>
+          <rect x="2" y="11" width="4" height="6" rx="1"></rect>
+          <rect x="8" y="11" width="4" height="6" rx="1"></rect>
+          <rect x="14" y="11" width="4" height="6" rx="1"></rect>
         </svg>
       </button>
     </div>
@@ -319,7 +330,7 @@
 
   function setCols(n) {
     cols = n;
-    gridEl.classList.remove("cols-1", "cols-2");
+    gridEl.classList.remove("cols-1", "cols-2", "cols-3");
     gridEl.classList.add("cols-" + n);
     var segs = document.querySelectorAll(".seg");
     for (var i = 0; i < segs.length; i++) {
@@ -474,7 +485,7 @@
     restoring = true;
 
     var c = parseInt(params.get("cols"), 10);
-    setCols(c === 2 ? 2 : 1);
+    setCols(c === 2 || c === 3 ? c : 1);
 
     var raw = params.get("v");
     if (raw) {
