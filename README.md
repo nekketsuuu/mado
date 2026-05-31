@@ -12,6 +12,8 @@ According to the terms of service of YouTube, we can't automatically play multip
 
 > A page or screen must not have more than one YouTube player that automatically plays content simultaneously.
 
+Also, because this application uses embedded YouTube videos, paid features such as YouTube Premium and channel memberships cannot be used.
+
 ## License
 
 The MIT License.
