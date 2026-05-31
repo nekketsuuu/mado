@@ -11,3 +11,7 @@ According to the terms of service of YouTube, we can't automatically play multip
 <https://developers.google.com/youtube/terms/required-minimum-functionality>
 
 > A page or screen must not have more than one YouTube player that automatically plays content simultaneously.
+
+## License
+
+The MIT License.
