@@ -464,7 +464,7 @@
   var MAX_WINDOWS = 12;
   var restoring = false;
 
-  // Save the current state as URL params.
+  // Save the current state as URL params so that users can reload the page without losing the added videos.
   // Format: ?cols=<n>&v=<id>,<id>,...
   function saveState() {
     if (restoring) return;
