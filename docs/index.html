@@ -592,7 +592,10 @@
         const ae = document.activeElement;
         if (ae && ae.tagName === "IFRAME") {
           const win = windows.find(function (w) { return w.mountId === ae.id; });
-          if (win) showTools(win);
+          if (win) {
+            showTools(win);
+            if (IOS && soloId !== win.id) soloAudio(win.id);
+          }
           try { window.focus(); } catch (e) {}
         }
       }, 0);
